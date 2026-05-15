@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calc</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-deep:    #0a0e14;
+  --bg-calc:    #0f1318;
+  --bg-btn:     #161c24;
+  --bg-btn-h:   #1e2733;
+  --bg-func:    #131921;
+  --bg-func-h:  #1a2535;
+  --accent:     #2e6fff;
+  --accent-h:   #4d84ff;
+  --accent-dim: rgba(46,111,255,0.18);
+  --accent-glow:rgba(46,111,255,0.35);
+  --text:       #e8eef8;
+  --text-dim:   rgba(180,200,230,0.4);
+  --text-func:  #6a9fd8;
+  --border:     rgba(255,255,255,0.055);
+  --border-acc: rgba(46,111,255,0.35);
+  --r:          26px;
+  --rb:         16px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  position: relative;
+}
+
+/* ── Ambient background ── */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(90px);
+}
+.orb-1 {
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, rgba(20,60,160,0.22) 0%, transparent 65%);
+  top: -200px; right: -180px;
+  animation: o1 16s ease-in-out infinite alternate;
+}
+.orb-2 {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(10,30,90,0.3) 0%, transparent 65%);
+  bottom: -150px; left: -130px;
+  animation: o2 20s ease-in-out infinite alternate;
+}
+.orb-3 {
+  width: 240px; height: 240px;
+  background: radial-gradient(circle, rgba(46,111,255,0.07) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  animation: o3 8s ease-in-out infinite;
+}
+@keyframes o1 { to { transform: translate(-30px, 25px); } }
+@keyframes o2 { to { transform: translate(25px, -35px); } }
+@keyframes o3 { 0%,100% { opacity:.6; transform:translate(-50%,-50%) scale(1);   }
+                50%       { opacity:1;  transform:translate(-50%,-50%) scale(1.2); } }
+
+/* subtle grain */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.025;
+}
+
+/* ── Shell ── */
+.shell {
+  position: relative; z-index: 1;
+  animation: appear .65s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes appear {
+  from { opacity:0; transform:translateY(24px) scale(.96); }
+  to   { opacity:1; transform:none; }
+}
+
+/* ── Calculator body ── */
+.calculator {
+  background: linear-gradient(160deg, #131820 0%, #0d1117 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--r);
+  padding: 28px 22px 24px;
+  width: 336px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.55),
+    0 60px 120px rgba(0,0,0,0.75),
+    0 24px 48px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* top edge glow */
+.calculator::before {
+  content:'';
+  position:absolute; top:0; left:15%; right:15%; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(46,111,255,.55),transparent);
+}
+
+/* ── Display ── */
+.display {
+  padding: 4px 8px 20px;
+  min-height: 112px;
+  display: flex; flex-direction: column;
+  justify-content: flex-end; align-items: flex-end;
+  gap: 3px;
+  position: relative;
+}
+
+.display-history {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px; font-weight: 300;
+  color: var(--text-dim);
+  letter-spacing: .06em;
+  min-height: 15px;
+  text-align: right;
+  word-break: break-all;
+}
+
+.display-expr {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px; font-weight: 400;
+  color: rgba(100,160,255,.55);
+  letter-spacing: .03em;
+  min-height: 18px;
+  text-align: right;
+  word-break: break-all;
+}
+
+.display-result {
+  font-family: 'Outfit', sans-serif;
+  font-size: 54px; font-weight: 300;
+  color: var(--text);
+  letter-spacing: -.025em;
+  line-height: 1;
+  text-align: right;
+  word-break: break-all;
+  transition: font-size .15s ease, color .2s;
+}
+.display-result.sm  { font-size: 38px; }
+.display-result.xs  { font-size: 27px; }
+.display-result.flash { color: #82b4ff; }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  margin: 0 2px 18px;
+  background: linear-gradient(90deg, transparent, rgba(46,111,255,.2) 30%, rgba(46,111,255,.2) 70%, transparent);
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+}
+
+/* ── Buttons ── */
+.btn {
+  background: var(--bg-btn);
+  border: 1px solid var(--border);
+  border-radius: var(--rb);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px; font-weight: 400;
+  height: 62px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: background .13s, border-color .13s, transform .08s, box-shadow .13s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  letter-spacing: .01em;
+}
+.btn:hover {
+  background: var(--bg-btn-h);
+  border-color: rgba(255,255,255,.1);
+  box-shadow: 0 4px 14px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.btn:active { transform: scale(.92); background: #1a2535; }
+
+/* Function row */
+.btn.func {
+  background: var(--bg-func);
+  border-color: rgba(100,160,255,.12);
+  color: var(--text-func);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.btn.func:hover {
+  background: var(--bg-func-h);
+  border-color: rgba(100,160,255,.28);
+  color: #8ec6ff;
+}
+
+/* Operator buttons */
+.btn.op {
+  background: var(--accent-dim);
+  border-color: var(--border-acc);
+  color: #7ab0ff;
+  font-size: 21px;
+}
+.btn.op:hover {
+  background: rgba(46,111,255,.28);
+  border-color: rgba(46,111,255,.55);
+  box-shadow: 0 0 18px rgba(46,111,255,.12), 0 4px 14px rgba(0,0,0,.4);
+}
+.btn.op.lit {
+  background: rgba(46,111,255,.38);
+  border-color: rgba(46,111,255,.7);
+  color: #b0d0ff;
+  box-shadow: 0 0 22px rgba(46,111,255,.22), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* Small utility */
+.btn.sm { font-size: 15px; color: var(--text-dim); }
+
+/* Equals tall */
+.btn.eq {
+  grid-row: span 2;
+  height: 100%; align-self: stretch;
+  background: linear-gradient(160deg, var(--accent) 0%, #1a4fd6 100%);
+  border-color: rgba(46,111,255,.6);
+  color: #fff;
+  font-size: 24px; font-weight: 500;
+  box-shadow: 0 6px 24px rgba(46,111,255,.38), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.btn.eq:hover {
+  background: linear-gradient(160deg, var(--accent-h) 0%, #2a5fea 100%);
+  box-shadow: 0 8px 32px rgba(46,111,255,.55), inset 0 1px 0 rgba(255,255,255,.22);
+}
+.btn.eq:active {
+  transform: scale(.92);
+  box-shadow: 0 3px 12px rgba(46,111,255,.3);
+}
+
+/* Ripple */
+.rip {
+  position: absolute; border-radius: 50%;
+  background: rgba(100,160,255,.18);
+  transform: scale(0);
+  animation: rip .5s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+@keyframes rip { to { transform: scale(5); opacity: 0; } }
+
+/* Result animation */
+@keyframes pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.display-result.pop { animation: pop .22s cubic-bezier(.34,1.56,.64,1); }
+
+/* ── Credit ── */
+.credit {
+  margin-top: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.credit-made {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(180,200,230,0.55);
+}
+.credit-made span {
+  color: #7ab0ff;
+  font-weight: 600;
+}
+.credit-ig {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #7ab0ff;
+  text-decoration: none;
+  letter-spacing: .04em;
+  padding: 6px 14px;
+  border: 1px solid rgba(46,111,255,0.35);
+  border-radius: 20px;
+  background: rgba(46,111,255,0.1);
+  transition: background .2s, border-color .2s, color .2s, box-shadow .2s;
+}
+.credit-ig:hover {
+  background: rgba(46,111,255,0.22);
+  border-color: rgba(46,111,255,0.65);
+  color: #b0d0ff;
+  box-shadow: 0 0 16px rgba(46,111,255,0.2);
+}
+.credit-ig svg { flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="shell">
+  <div class="calculator">
+    <div class="display">
+      <div class="display-history" id="hist"></div>
+      <div class="display-expr"    id="expr"></div>
+      <div class="display-result"  id="res">0</div>
+    </div>
+    <div class="divider"></div>
+    <div class="grid">
+      <!-- Row 1 -->
+      <button class="btn func" data-a="clear">AC</button>
+      <button class="btn func" data-a="sign">+/−</button>
+      <button class="btn func" data-a="pct">%</button>
+      <button class="btn op"   data-a="÷" id="b-div">÷</button>
+      <!-- Row 2 -->
+      <button class="btn" data-a="7">7</button>
+      <button class="btn" data-a="8">8</button>
+      <button class="btn" data-a="9">9</button>
+      <button class="btn op" data-a="×" id="b-mul">×</button>
+      <!-- Row 3 -->
+      <button class="btn" data-a="4">4</button>
+      <button class="btn" data-a="5">5</button>
+      <button class="btn" data-a="6">6</button>
+      <button class="btn op" data-a="-" id="b-sub">−</button>
+      <!-- Row 4 -->
+      <button class="btn" data-a="1">1</button>
+      <button class="btn" data-a="2">2</button>
+      <button class="btn" data-a="3">3</button>
+      <button class="btn op" data-a="+" id="b-add">+</button>
+      <!-- Row 5 -->
+      <button class="btn" data-a="0">0</button>
+      <button class="btn" data-a=".">·</button>
+      <button class="btn sm" data-a="back">⌫</button>
+      <button class="btn eq" data-a="=">=</button>
+    </div>
+  </div>
+  <div class="credit">
+    <div class="credit-made">Made by <span>radiov32waves</span></div>
+    <a class="credit-ig" href="https://instagram.com/radio.v32waves" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <circle cx="12" cy="12" r="4"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      radio.v32waves
+    </a>
+  </div>
+</div>
+
+<script>
+const H = document.getElementById('hist');
+const E = document.getElementById('expr');
+const R = document.getElementById('res');
+
+let disp = '0', expr = '', evaled = false, curOp = null;
+
+const fmt = n => {
+  if (!isFinite(n)||isNaN(n)) return 'Error';
+  const s = parseFloat(n.toPrecision(14)).toString();
+  const [i,d] = s.split('.');
+  return (i.replace(/\B(?=(\d{3})+(?!\d))/g,',')) + (d ? '.'+d : '');
+};
+
+const resize = () => {
+  const l = disp.replace(/[^0-9.]/g,'').length;
+  R.className = 'display-result' + (l>13?' xs':l>9?' sm':'');
+};
+
+const render = () => { R.textContent=disp; E.textContent=expr; resize(); };
+
+const flash = () => {
+  R.classList.remove('pop','flash'); void R.offsetWidth;
+  R.classList.add('pop','flash');
+  setTimeout(()=>R.classList.remove('flash'),280);
+};
+
+const hilite = op => {
+  curOp = op;
+  ['b-div','b-mul','b-sub','b-add'].forEach(id=>document.getElementById(id).classList.remove('lit'));
+  const m={'÷':'b-div','×':'b-mul','-':'b-sub','+':'b-add'};
+  if(op&&m[op]) document.getElementById(m[op]).classList.add('lit');
+};
+
+const calc = s => {
+  try {
+    const v = Function('"use strict";return('+s.replace(/÷/g,'/').replace(/×/g,'*')+')')();
+    return typeof v==='number'?v:NaN;
+  } catch { return NaN; }
+};
+
+const ripple = (btn,e) => {
+  const r=document.createElement('span'); r.className='rip';
+  const rect=btn.getBoundingClientRect(), sz=Math.max(rect.width,rect.height)*2;
+  r.style.cssText=`width:${sz}px;height:${sz}px;left:${e.clientX-rect.left-sz/2}px;top:${e.clientY-rect.top-sz/2}px`;
+  btn.appendChild(r); setTimeout(()=>r.remove(),600);
+};
+
+function go(a) {
+  const ops=['+','-','÷','×'];
+
+  if(a==='clear'){disp='0';expr='';evaled=false;H.textContent='';hilite(null);render();return;}
+  if(a==='back'){
+    if(evaled){disp='0';expr='';evaled=false;render();return;}
+    disp=disp.length>1?disp.slice(0,-1):'0'; render(); return;
+  }
+  if(a==='sign'){
+    const n=parseFloat(disp.replace(/,/g,''));
+    if(!isNaN(n)) disp=fmt(-n); render(); return;
+  }
+  if(a==='pct'){
+    const n=parseFloat(disp.replace(/,/g,''));
+    if(!isNaN(n)){
+      disp=expr.match(/[+\-]$/) ? fmt(calc(expr.slice(0,-1))*n/100) : fmt(n/100);
+      evaled=false; render();
+    }
+    return;
+  }
+  if(ops.includes(a)){
+    if(evaled){expr=disp.replace(/,/g,'')+a;evaled=false;}
+    else if(expr.match(/[+\-÷×]$/)){expr=expr.slice(0,-1)+a;}
+    else{
+      const mid=calc(expr+disp.replace(/,/g,''));
+      if(!isNaN(mid)&&expr){disp=fmt(mid);expr=disp.replace(/,/g,'')+a;}
+      else{expr+=disp.replace(/,/g,'')+a;}
+      disp='0';
+    }
+    hilite(a); render(); return;
+  }
+  if(a==='='){
+    if(!expr){render();return;}
+    const full=expr+disp.replace(/,/g,'');
+    const v=calc(full);
+    H.textContent=full.replace(/÷/g,' ÷ ').replace(/×/g,' × ')+'  =';
+    disp=isNaN(v)||!isFinite(v)?'Error':fmt(v);
+    expr=''; evaled=true; hilite(null); flash(); render(); return;
+  }
+  if(evaled){expr='';disp='0';evaled=false;hilite(null);}
+  if(a==='.'){if(!disp.includes('.'))disp+='.';render();return;}
+  disp=disp==='0'?a:disp+a; render();
+}
+
+document.querySelectorAll('.btn').forEach(btn=>{
+  btn.addEventListener('click',e=>{ripple(btn,e);go(btn.dataset.a);});
+});
+document.addEventListener('keydown',e=>{
+  const m={'0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
+    '.':'.', '+':'+', '-':'-', '*':'×', '/':'÷',
+    'Enter':'=','=':'=','Backspace':'back','Escape':'clear','%':'pct'};
+  if(m[e.key]){e.preventDefault();go(m[e.key]);}
+});
+render();
+</script>
+</body>
+</html>
